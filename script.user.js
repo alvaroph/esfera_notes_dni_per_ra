@@ -11,12 +11,6 @@
 (function() {
     'use strict';
 
-    /**
-     * ¡¡IMPORTANT!!
-     * La línia @match de dalt ja està configurada amb la URL que vas proporcionar.
-     * Si canvies d'aplicació o la URL canvia, recorda actualitzar-la.
-     */
-
     // 1. Esperar que la pàgina carregui completament
     window.addEventListener('load', () => {
         // Donem un petit marge extra perquè Angular acabi de "pintar" tot
