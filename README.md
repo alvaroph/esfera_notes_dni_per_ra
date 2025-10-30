@@ -21,7 +21,7 @@ Per instal·lar aquest script necessites:
     👉 [https://www.tampermonkey.net/](https://www.tampermonkey.net/)
 
 2.  Fes clic a l'enllaç següent per descarregar l'script:
-    👉  [https://raw.githubusercontent.com/alvaroph/esfera_notes_dni_per_ra/refs/heads/main/script.user.js](Instal·lar script) 
+    👉  [ Instal·lar ](https://raw.githubusercontent.com/alvaroph/esfera_notes_dni_per_ra/refs/heads/main/script.user.js) 
 
 3.  Tampermonkey t'obrirà una pestanya amb el codi i un botó per "Install" (Instal·lar). Fes-hi clic.
 
