@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Assignador de Notes per DNI
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Assigna notes massivament des d'un àrea de text usant el DNI de l'alumne a la plataforma de notes.
-// @author       (Tu nombre aquí)
-// @match        *://bfgh.aplicacions.ensenyament.gencat.cat/bfgh/avaluacio/finalAvaluacioGrupMateria*
+// @author       Álvaro Pérez
+// @match        https://bfgh.aplicacions.ensenyament.gencat.cat/bfgh/avaluacio/*
 // @grant        none
 // ==/UserScript==
 
