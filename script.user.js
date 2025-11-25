@@ -1,291 +1,252 @@
 // ==UserScript==
-// @name         Assignador de Notes per DNI
+// @name         Assignador de Notes per DNI (SPA Fixed + Reporte Errores)
 // @namespace    http://tampermonkey.net/
-// @version      1.4
-// @description  Assigna notes massivament des d'un àrea de text usant el DNI de l'alumne a la plataforma de notes.
-// @author       Álvaro Pérez
-// @match        https://bfgh.aplicacions.ensenyament.gencat.cat/bfgh/avaluacio/*
+// @version      1.5
+// @description  Assigna notes massivament i reporta quins alumnes no s'han trobat.
+// @author       (Tu nombre aquí)
+// @match        https://bfgh.aplicacions.ensenyament.gencat.cat/bfgh/avaluacio/finalAvaluacioGrupMateria*
 // @grant        none
+// @run-at       document-idle
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    // 1. Esperar que la pàgina carregui completament
-    window.addEventListener('load', () => {
-        // Donem un petit marge extra perquè Angular acabi de "pintar" tot
-        setTimeout(injectUI, 1000);
-    });
+    // CONFIGURACIÓN
+    const CHECK_INTERVAL_MS = 2000; // Comprobar cada 2 segundos
+    const CONTAINER_ID = 'grade-injector-container';
 
-    // 2. Injectar la UI (caixa de text i botó)
-    function injectUI() {
+    // 1. Detección continua (Fix para SPA)
+    setInterval(() => {
+        if (document.getElementById(CONTAINER_ID)) return;
+        
+        // Buscamos la tabla específica de alumnos
+        const table = document.querySelector('table[data-st-table="dummyStudents"]');
+        
+        if (table) {
+            console.log('Taula detectada. Injectant panell...');
+            injectUI(table);
+        }
+    }, CHECK_INTERVAL_MS);
+
+    // 2. Injectar la UI
+    function injectUI(targetTable) {
         const container = document.createElement('div');
-        container.id = 'grade-injector-container';
+        container.id = CONTAINER_ID;
 
-        // Afegim estils CSS per les columnes i la capçalera plegable
         const styles = `
             #grade-injector-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                cursor: pointer;
-                user-select: none;
+                display: flex; justify-content: space-between; align-items: center;
+                cursor: pointer; user-select: none; background-color: #e6f0ff;
+                padding: 10px; border-bottom: 1px solid #007bff; border-radius: 6px 6px 0 0;
             }
-            #grade-injector-header h3 { margin: 0; }
-            #grade-injector-toggle { font-size: 1.5em; padding: 5px; }
-            #grade-injector-body {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                margin-top: 15px;
-            }
-            #injector-col-log h4 { margin-top: 0; }
+            #grade-injector-header h3 { margin: 0; color: #0056b3; font-size: 16px; }
+            #grade-injector-body { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
             #grade-injector-log {
-                height: 220px; /* Alçada fixa pel log */
-                max-height: none; /* Sobreescriure el max-height anterior */
-                overflow-y: auto;
-                border: 1px solid #ccc;
-                padding: 10px;
-                background: #fdfdfd;
-                font-family: monospace;
-                font-size: 12px;
+                height: 200px; overflow-y: auto; border: 1px solid #ccc;
+                padding: 10px; background: #fff; font-family: monospace; font-size: 11px;
             }
             #grade-input-area {
-                width: 100%;
-                height: 180px; /* Alçada augmentada pel textarea */
-                box-sizing: border-box;
-                font-family: monospace;
+                width: 100%; height: 160px; box-sizing: border-box;
+                font-family: monospace; border: 1px solid #ccc; padding: 5px;
             }
-            /* Disseny responsive: una columna en pantalles petites */
-            @media (max-width: 768px) {
-                #grade-injector-body { grid-template-columns: 1fr; }
-                #grade-injector-log { height: 150px; } /* Tornar a alçada més petita */
-                #grade-input-area { height: 120px; }
-            }
+            @media (max-width: 768px) { #grade-injector-body { grid-template-columns: 1fr; } }
         `;
 
         container.innerHTML = `
             <style>${styles}</style>
-
-            <!-- Capçalera (sempre visible) -->
             <div id="grade-injector-header" title="Plegar / Desplegar">
-                <h3 style="margin-top: 0;">Assignador Ràpid de Notes per DNI</h3>
+                <h3>⚡ Assignador Massiu v1.5</h3>
                 <div id="grade-injector-toggle">▲</div>
             </div>
-
-            <!-- Cos (plegable) -->
             <div id="grade-injector-body">
-
-                <!-- Columna 1: Input -->
                 <div id="injector-col-input">
-                    <p style="margin: 4px 0;">Enganxa les dades aquí (un alumne per línia). Format: <strong>DNI,Nota</strong> o <strong>DNI Nota</strong></p>
-                    <p style="margin: 4px 0;">Introdueix la nota numèrica (ex: <strong>10, 9, 5, 4</strong>) o text (<strong>PDT, EP, NA</strong>).</p>
-                    <textarea id="grade-input-area" rows="8"></textarea>
-                    <button id="process-grades-btn" style="padding: 10px 15px; margin-top: 10px; font-size: 14px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    <p style="margin: 0 0 5px 0; font-size: 12px;"><strong>DNI Nota</strong> (separat per espai o tab)</p>
+                    <textarea id="grade-input-area" placeholder="12345678X 8&#10;87654321Z 6.5"></textarea>
+                    <button id="process-grades-btn" style="width:100%; padding: 8px; margin-top: 8px; font-weight:bold; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
                         Processar Notes
                     </button>
                 </div>
-
-                <!-- Columna 2: Log -->
                 <div id="injector-col-log">
-                     <h4 style="margin-top:0;">Resultats del processament</h4>
-                     <div id="grade-injector-log">
-                        <p>A punt per processar...</p>
-                    </div>
+                     <h4 style="margin:0 0 5px 0; font-size: 12px;">Resultats:</h4>
+                     <div id="grade-injector-log"><p style="color:#666;">Esperant dades...</p></div>
                 </div>
-
             </div>
         `;
 
-        // Estils del contenidor principal
         Object.assign(container.style, {
-            padding: '20px',
-            backgroundColor: '#f4f8ff',
-            border: '2px solid #007bff',
-            borderRadius: '8px',
-            margin: '20px 0',
-            zIndex: '9999',
-            position: 'relative'
+            backgroundColor: '#f4f8ff', border: '1px solid #007bff',
+            borderRadius: '8px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         });
 
-        // Inserir abans de la taula principal
-        const table = document.querySelector('table[data-st-table="dummyStudents"]');
-
-        if (table && table.parentElement) {
-            table.parentElement.insertBefore(container, table);
+        if (targetTable && targetTable.parentElement) {
+            targetTable.parentElement.insertBefore(container, targetTable);
         } else {
-            log('No s\'ha trobat la taula principal (data-st-table="dummyStudents"). Inserint a l\'inici del body.', true);
             document.body.prepend(container);
         }
 
-        // Afegir listeners als botons
         document.getElementById('process-grades-btn').addEventListener('click', processGrades);
         document.getElementById('grade-injector-header').addEventListener('click', toggleInjectorBody);
     }
 
-    // Funció per plegar/desplegar el cos de l'eina
     function toggleInjectorBody() {
         const body = document.getElementById('grade-injector-body');
         const toggle = document.getElementById('grade-injector-toggle');
-        if (body.style.display === 'none') {
-            body.style.display = 'grid'; // Tornar a 'grid' (com als estils)
-            toggle.textContent = '▲';
-        } else {
-            body.style.display = 'none';
-            toggle.textContent = '▼';
-        }
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? 'grid' : 'none';
+        toggle.textContent = isHidden ? '▲' : '▼';
     }
 
-    // Funció per mostrar missatges al log
-    function log(message, isError = false) {
+    function log(message, type = 'info') {
         const logDiv = document.getElementById('grade-injector-log');
         if (logDiv) {
             const p = document.createElement('p');
             p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            p.style.color = isError ? '#d9534f' : '#5cb85c'; // Vermell per error, verd per èxit
+            
+            if (type === 'error') p.style.color = '#d9534f'; // Rojo
+            else if (type === 'success') p.style.color = '#28a745'; // Verde
+            else if (type === 'warning') p.style.color = '#ff9900'; // Naranja
+            else p.style.color = '#333';
+
             p.style.margin = '2px 0';
-            p.style.borderBottom = '1px solid #eee';
-            logDiv.prepend(p); // Afegir nous logs al principi
+            p.style.borderBottom = '1px solid #f0f0f0';
+            logDiv.prepend(p);
         }
-        (isError ? console.error : console.log)(message);
+        if (type === 'error') console.error(message);
+        else console.log(message);
     }
 
-    /**
-     * Funció de mapeig: Converteix la nota numèrica (o text) a la nota del desplegable.
-     * @param {string} gradeInput - La nota entrada per l'usuari (ex: "10", "5", "NA").
-     * @returns {string|null} - El valor per al <select> (ex: "string:A10") o null si no és vàlid.
-     */
     function mapGradeToValue(gradeInput) {
         const grade = gradeInput.toUpperCase();
-
-        // Primer, comprovem text directe (PDT, EP, NA)
         if (grade === 'PDT') return 'string:PDT';
         if (grade === 'EP') return 'string:EP';
         if (grade === 'NA') return 'string:NA';
+        if (grade === 'MH') return 'string:MH';
 
-        // Ara, gestionem els valors numèrics
-        // Permetre notes amb decimals (ex: 8.5) i arrodonir-les
-        const numFloat = parseFloat(gradeInput.replace(',', '.')); // Acceptar coma o punt
+        const numFloat = parseFloat(gradeInput.replace(',', '.'));
         if (isNaN(numFloat)) {
-             // Podria ser un text com "A10", donem-li suport per flexibilitat
-            if (grade.startsWith('A') && grade.length >= 2) {
-                 return 'string:' + grade;
-            }
-            return null; // Entrada invàlida
+            if (grade.startsWith('A') && grade.length >= 2) return 'string:' + grade;
+            return null;
         }
 
-        const num = Math.round(numFloat); // Arrodonir a l'enter més proper
-
+        const num = Math.round(numFloat);
         if (num >= 10) return 'string:A10';
         if (num === 9) return 'string:A9';
         if (num === 8) return 'string:A8';
         if (num === 7) return 'string:A7';
         if (num === 6) return 'string:A6';
         if (num === 5) return 'string:A5';
-        if (num < 5 && num >= 0) return 'string:NA'; // Mapeja 0-4 a "No assolit"
-
-        return null; // Número invàlid (ex: negatiu)
+        if (num < 5 && num >= 0) return 'string:NA';
+        return null;
     }
 
-    // 3. Funció principal per processar les notes
+    // 3. LÒGICA PRINCIPAL (CORREGIDA)
     function processGrades() {
-        log('Iniciant processament...');
-        document.getElementById('grade-injector-log').innerHTML = ''; // Netejar log
+        log('Iniciant processament...', 'info');
+        document.getElementById('grade-injector-log').innerHTML = ''; 
         const input = document.getElementById('grade-input-area').value.trim();
 
         if (!input) {
-            log('L\'àrea de text és buida.', true);
+            log('L\'àrea de text és buida.', 'error');
             return;
         }
 
         const lines = input.split('\n');
-        const gradeMap = new Map();
+        const gradeMap = new Map(); // Mapa: DNI -> Nota
+        const processedDNIs = new Set(); // Conjunt per marcar els que trobem a la taula
         let parseErrors = 0;
 
-        // Parsejar l'entrada de l'usuari
+        // Fase 1: Llegir la teva llista
         lines.forEach((line, index) => {
             if (line.trim()) {
-                // Separar per coma, espai or tabulació
-                const parts = line.trim().split(/[\s,t]+/);
+                const parts = line.trim().split(/[\s,t;]+/);
                 if (parts.length >= 2) {
-                    const dni = parts[0].trim().toUpperCase();
-                    const grade = parts[1].trim(); // Guardar la nota original (ex: 8.5)
+                    // Netegem DNI (traiem guions i espais)
+                    const dni = parts[0].trim().toUpperCase().replace(/[-\s]/g, '');
+                    const grade = parts[parts.length - 1].trim(); 
                     if (dni && grade) {
                         gradeMap.set(dni, grade);
                     } else {
-                        log(`Error en parsejar línia ${index + 1}: "${line}". S'ignora.`, true);
                         parseErrors++;
                     }
                 } else {
-                     log(`Error en parsejar línia ${index + 1}: "${line}". Format incorrecte.`, true);
-                     parseErrors++;
+                    parseErrors++;
                 }
             }
         });
 
         if (gradeMap.size === 0) {
-            log("No s'han pogut parsejar dades vàlides. Assegura't del format: DNI,Nota", true);
+            log("No hi ha dades vàlides. Revisa el format.", 'error');
             return;
         }
 
-        log(`Dades parsejades: ${gradeMap.size} alumnes a processar. ${parseErrors} línies ignorades.`);
+        log(`Llista carregada: ${gradeMap.size} alumnes. Buscant a la taula...`, 'info');
 
-        // Iterar per les files de la taula
         const studentRows = document.querySelectorAll('tbody tr[data-ng-repeat^="alumne in dummyStudents"]');
-        if (studentRows.length === 0) {
-            log('No s\'han trobat files d\'alumnes a la taula (tbody tr[data-ng-repeat^="alumne in dummyStudents"]). És visible la taula?', true);
-            return;
-        }
-
-        let foundCount = 0;
         let updatedCount = 0;
 
+        // Fase 2: Recórrer la taula web
         studentRows.forEach((row) => {
-            row.style.backgroundColor = '';
-            const dniCell = row.querySelectorAll('td')[4];
-            if (!dniCell) return;
-
-            const dni = dniCell.textContent.trim().toUpperCase();
-
-            if (gradeMap.has(dni)) {
-                foundCount++;
-                const gradeInput = gradeMap.get(dni); // ex: "8.5", "5", "NA"
-
-                const targetValue = mapGradeToValue(gradeInput);
-
-                if (!targetValue) {
-                    log(`ERROR: Alumne ${dni} - la nota '${gradeInput}' no és vàlida o no es pot mapejar.`, true);
-                    row.style.backgroundColor = '#f8d7da';
-                    return;
+            row.style.backgroundColor = ''; 
+            const cells = row.querySelectorAll('td');
+            let dniFoundInTable = null;
+            
+            // Busquem DNI a les cel·les visibles
+            for (let cell of cells) {
+                const text = cell.textContent.trim().toUpperCase().replace(/[-\s]/g, ''); // Netegem també el de la taula
+                // Regex DNI/NIE aproximat (8 nums+lletra o Lletra+7nums+Lletra)
+                if (text.length >= 8 && text.length <= 12 && /\d/.test(text)) {
+                    // Si aquest text "net" coincideix amb una clau del nostre mapa
+                    if (gradeMap.has(text)) {
+                        dniFoundInTable = text;
+                        break; 
+                    }
                 }
+            }
 
-                const select = row.querySelector('select[data-ng-if="el.type==\'select\' && !alumne.esEpriEinf"]');
+            // Si hem trobat un DNI a la fila que està a la nostra llista
+            if (dniFoundInTable) {
+                // MARQUEM COM A PROCESSAT
+                processedDNIs.add(dniFoundInTable);
 
-                if (select) {
-                    const optionExists = select.querySelector(`option[value="${targetValue}"]`);
+                const gradeInput = gradeMap.get(dniFoundInTable);
+                const targetValue = mapGradeToValue(gradeInput);
+                const select = row.querySelector('select'); 
 
-                    if (optionExists) {
+                if (select && targetValue) {
+                    if (select.value !== targetValue) {
                         select.value = targetValue;
-                        select.dispatchEvent(new Event('input', { bubbles: true }));
                         select.dispatchEvent(new Event('change', { bubbles: true }));
-
-                        log(`ÈXIT: Alumne ${dni} actualitzat a ${gradeInput} (Mapejat a: ${targetValue.replace('string:','')}).`, false);
-                        row.style.backgroundColor = '#d4edda';
+                        select.dispatchEvent(new Event('input', { bubbles: true }));
+                        row.style.backgroundColor = '#d4edda'; // Verd
                         updatedCount++;
                     } else {
-                        log(`ERROR: Alumne ${dni} - la nota '${gradeInput}' (mapejada a: ${targetValue}) no és una opció vàlida en el desplegable.`, true);
-                        row.style.backgroundColor = '#f8d7da';
+                         // Ja tenia la nota posada
+                         row.style.backgroundColor = '#e2e6ea'; 
                     }
                 } else {
-                    log(`ERROR: Alumne ${dni} - No s'ha trobat el desplegable de nota en aquesta fila.`, true);
-                    row.style.backgroundColor = '#f8d7da';
+                    row.style.backgroundColor = '#f8d7da'; // Vermell clar
+                    log(`Error assignant nota a ${dniFoundInTable}.`, 'error');
                 }
             }
         });
 
-        log(`Procés completat. Alumnes trobats a la taula: ${foundCount}. Alumnes actualitzats amb èxit: ${updatedCount}.`, false);
-        if (updatedCount < gradeMap.size) {
-            log(`AVÍS: ${gradeMap.size - updatedCount} alumnes de la teva llista no s'han trobat o no s'han pogut actualitzar a la taula actual.`, true);
+        // Fase 3: REPORTAR ELS QUE FALTEN (La part nova)
+        let missingCount = 0;
+        gradeMap.forEach((val, key) => {
+            if (!processedDNIs.has(key)) {
+                log(`⚠️ ALERTA: No s'ha trobat l'alumne amb DNI ${key} a la taula.`, 'warning');
+                missingCount++;
+            }
+        });
+
+        log('------------------------------------------------', 'info');
+        log(`Resum Final:`, 'info');
+        log(`✅ Assignats/Revisats: ${processedDNIs.size}`, 'success');
+        if (missingCount > 0) {
+            log(`❌ NO TROBATS: ${missingCount} (Revisa el log de dalt)`, 'error');
+        } else {
+            log(`🎉 Tots els alumnes de la llista han estat processats!`, 'success');
         }
     }
 
