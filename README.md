@@ -93,6 +93,3 @@ Això vol dir:
 
 Fes-lo servir sota la teva responsabilitat i sentit comú.
 
-***
-
-Si vols que afegim captures de pantalla de com queda el panell o els colors al README, només m'ho has de dir i et preparo el codi per inserir-les!
