@@ -1,8 +1,10 @@
-# Esfer@ PowerTool: Assignador Massiu de Notes
+# Esfer@ Script: Assignador Massiu de Notes v2.1
 
 Millores personalitzades per a la plataforma d'avaluació Esfer@ del Departament d'Educació de la Generalitat de Catalunya.
 
 Aquest script et permet estalviar hores a l'hora de posar les notes finals. Deixa de fer clic a milers de desplegables i aplica totes les notes d'un grup en segons, fent un simple copiar-enganxar des del teu full de càlcul (Excel, Google Sheets, etc.).
+
+A més, **coloreja les notes** creant un "mapa de calor" visual de la classe i t'avisa de qualsevol anomalia (alumnes sense nota, pendents o DNIs erronis).
 
 ---
 
@@ -48,12 +50,12 @@ Al teu full de càlcul, selecciona només les dues columnes (DNI i Nota) de tots
 
 #### Pas 3: Enganxar i Processar
 
-1.  Ves a la pàgina d'avaluació final de l'Esfer@. Veuràs el nou panell "Assignador Ràpid de Notes per DNI" a la part superior.
+1.  Ves a la pàgina d'avaluació final de l'Esfer@. Veuràs el nou panell "Assignador Massiu" a la part superior.
 2.  Fes clic a la caixa de text de l'esquerra i fes `Ctrl+V` (Enganxar).
 3.  Veuràs totes les teves dades enganxades, una línia per alumne.
-4.  Fes clic al botó blau "Processar Notes".
+4.  Fes clic al botó verd **"PROCESSAR I ACOLORIR"**.
 
-L'script s'encarregarà de buscar cada DNI a la taula de sota i assignar-li la nota corresponent del desplegable. El registre de la dreta t'informarà de l'èxit o de qualsevol error (ex: DNI no trobat, nota invàlida).
+L'script s'encarregarà de buscar cada DNI a la pestanya activa, assignar-li la nota corresponent, acolorir els desplegables i generar un informe detallat al panell de la dreta.
 
 ---
 
@@ -61,13 +63,22 @@ L'script s'encarregarà de buscar cada DNI a la taula de sota i assignar-li la n
 
 -   **Interfície Integrada**: Afegeix un panell útil a la part superior de la pàgina, sense molestar.
 -   **Plegable**: Pots plegar i desplegar el panell per estalviar espai amb un sol clic al títol.
--   **Disseny de 2 Columnes**: Entra dades a l'esquerra i llegeix els resultats a la dreta, de forma clara.
 -   **Entrada Massiva de Notes**: Processa desenes de notes en segons fent copiar-enganxar.
 -   **Traducció Automàtica**: Entra la nota com vulguis:
     -   **Numèrica (amb arrodoniment)**: `10`, `9`, `8.5` (es converteix a `9`), `7`, `6`, `5`.
-    -   **Suspesos**: `4`, `3`, `2`, `1`, `0` (tots es converteixen a `NA`).
+    -   **Suspesos**: `4.9` o inferior (tots es converteixen a `NA`).
     -   **Text**: `NA`, `EP`, `PDT`.
--   **Feedback Visual**: El registre (log) t'informa de cada alumne processat (èxit en verd, error en vermell) i marca les files de la taula de sota.
+-   **Acoloriment Natiu (Mapa de Calor)**: L'script llegeix totes les notes de la taula (les noves i les que ja hi eren) i pinta els desplegables exactament com ho fa Esfer@:
+    -   🟩 **Verd**: Assolit (5 a 10).
+    -   🟥 **Vermell**: No Assolit (NA).
+    -   🟧 **Taronja**: En Procés (EP).
+    -   🟨 **Groc**: Pendent (PDT).
+-   **Control d'Errors i Registre Detallat (NOU)**: El panell de la dreta fa una auditoria completa un cop acaba d'assignar les notes:
+    -   ✅ Et confirma quantes notes s'han inserit amb èxit.
+    -   ⚠️ **Falta Nota**: T'avisa amb nom i cognom si algun alumne de la taula s'ha quedat amb la casella en blanc.
+    -   🚨 **Alerta Pendent**: Et ressalta quins alumnes tenen la nota "PDT" per a que els puguis revisar.
+    -   ❌ **DNI no trobat**: T'alerta si has enganxat un DNI que no correspon a cap alumne de la pestanya actual.
+-   **Compatibilitat Angular/SPA**: Detecta automàticament la pestanya activa (ex: F1, F2...) per no barrejar dades entre avaluacions.
 
 ---
 
@@ -81,3 +92,7 @@ Això vol dir:
 -   L’autor no es fa responsable de cap dany, error o conseqüència derivada del seu ús.
 
 Fes-lo servir sota la teva responsabilitat i sentit comú.
+
+***
+
+Si vols que afegim captures de pantalla de com queda el panell o els colors al README, només m'ho has de dir i et preparo el codi per inserir-les!
